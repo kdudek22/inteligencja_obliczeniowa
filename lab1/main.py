@@ -1,5 +1,5 @@
 from games import PlayALotOfGAmes
-from easyAI import Negamax
+from easyAI import Negamax, SSS
 import time
 
 
@@ -13,7 +13,7 @@ class CustomNegamax(Negamax):
 
 
 def main():
-    params_1 = {"algorithm": CustomNegamax(2), "alg_name": "Negmax"}
+    params_1 = {"algorithm": SSS(2), "alg_name": "Negmax"}
     params_2 = {"algorithm": CustomNegamax(4), "alg_name": "Negmax"}
 
     lot_of_games = PlayALotOfGAmes(params_1, params_2, deterministic=False, plot=True, num_of_games=100)
