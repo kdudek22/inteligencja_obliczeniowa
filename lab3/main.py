@@ -1,7 +1,17 @@
-import gymnasium as gym
+# import gymnasium as gym
+import gym
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+import tensorflow as tf
+import numpy as np
+from tensorflow import keras
+from keras.optimizers import Adam
+from keras.models import load_model
+
+from rl.agents import DQNAgent
+from rl.policy import BoltzmannQPolicy
+from rl.memory import SequentialMemory
 
 
 class Taxi:
@@ -88,9 +98,57 @@ class Taxi:
         plt.savefig("odds.png")
 
 
+class LunarLander:
+    def __init__(self, is_training=True, episodes=100, training_steps=50000):
+        self.is_training = is_training
+        self.episodes = episodes
+        self.training_steps = training_steps
+        self.env = gym.make("LunarLander-v2", render_mode="human" if not self.is_training else None)
+        self.model = self.create_or_load_model()
+        self.train() if self.is_training else self.run()
+
+    def create_or_load_model(self):
+        if self.is_training:
+            model = keras.Sequential([
+                keras.layers.Flatten(input_shape=(1, self.env.observation_space.shape[0])),
+                keras.layers.Dense(64, activation="relu"),
+                keras.layers.Dense(64, activation="relu"),
+                keras.layers.Dense(self.env.action_space.n, activation="linear")
+            ])
+            return model
+        return load_model("lunar.h5")
+
+    def train(self):
+        agent = DQNAgent(model=self.model, memory=SequentialMemory(limit=5000, window_length=1), policy=BoltzmannQPolicy(),
+                         nb_actions=self.env.action_space.n, nb_steps_warmup=10, target_model_update=0.01)
+        agent.compile(Adam(lr=0.001), metrics=["mae"])
+        history = agent.fit(self.env, nb_steps=10000, visualize=False, verbose=1)
+
+        # agent.test(self.env, nb_episodes=10, visualize=True)
+
+        agent.model.save("lunar.h5")
+
+        plt.plot(history.history["episode_reward"])
+        plt.savefig("lunar-reward.png")
+        plt.show()
+        plt.plot(history.history["nb_episode_steps"])
+        plt.savefig("lunar-episodes.png")
+        plt.show()
+        self.env.close()
+
+    def run(self):
+        for i in range(self.episodes):
+            state = self.env.reset()
+            terminated, truncated = False, False
+            while not terminated:
+                action = np.argmax(self.model.predict([[[state]]]))
+
+                new_state, reward, terminated, info = self.env.step(action)
+
+                state = new_state
+        self.env.close()
 
 
 if __name__ == '__main__':
-
-    t = Taxi(render=True)
+    lander = LunarLander(is_training=True, episodes=10)
 
