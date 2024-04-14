@@ -99,7 +99,7 @@ class Taxi:
 
 
 class LunarLander:
-    def __init__(self, is_training=True, episodes=100, training_steps=50000):
+    def __init__(self, is_training=True, episodes=100, training_steps=10000):
         self.is_training = is_training
         self.episodes = episodes
         self.training_steps = training_steps
@@ -111,29 +111,38 @@ class LunarLander:
         if self.is_training:
             model = keras.Sequential([
                 keras.layers.Flatten(input_shape=(1, self.env.observation_space.shape[0])),
-                keras.layers.Dense(64, activation="relu"),
-                keras.layers.Dense(64, activation="relu"),
-                keras.layers.Dense(self.env.action_space.n, activation="linear")
+                keras.layers.Dense(32, activation="relu"),
+                keras.layers.Dense(self.env.action_space.n)
             ])
             return model
         return load_model("lunar.h5")
 
     def train(self):
-        agent = DQNAgent(model=self.model, memory=SequentialMemory(limit=5000, window_length=1), policy=BoltzmannQPolicy(),
-                         nb_actions=self.env.action_space.n, nb_steps_warmup=10, target_model_update=0.01)
+        agent = DQNAgent(model=self.model, memory=SequentialMemory(limit=10000, window_length=1), policy=BoltzmannQPolicy(),
+                         nb_actions=self.env.action_space.n, nb_steps_warmup=10, target_model_update=0.01, gamma=1)
         agent.compile(Adam(lr=0.001), metrics=["mae"])
-        history = agent.fit(self.env, nb_steps=10000, visualize=False, verbose=1)
-
-        # agent.test(self.env, nb_episodes=10, visualize=True)
+        history = agent.fit(self.env, nb_steps=self.training_steps, visualize=False, verbose=1)
 
         agent.model.save("lunar.h5")
+
+        run_avg_reward = running_average(history.history["episode_reward"], 50)
+
+        # with open("lunar_results.txt", "a") as myfile:
+        #     myfile.write("\n")
+        #     myfile.write(",".join([str(x) for x in run_avg_reward]))
 
         plt.plot(history.history["episode_reward"])
         plt.savefig("lunar-reward.png")
         plt.show()
+
+        plt.plot(run_avg_reward)
+        plt.savefig("lunar-running-reward.png")
+        plt.show()
+
         plt.plot(history.history["nb_episode_steps"])
         plt.savefig("lunar-episodes.png")
         plt.show()
+
         self.env.close()
 
     def run(self):
@@ -149,6 +158,13 @@ class LunarLander:
         self.env.close()
 
 
+def running_average(arr, window_size):
+    """Calculate the average of widnow_size behind and the current element"""
+    cumsum = np.cumsum(arr, dtype=float)
+    cumsum[window_size:] = cumsum[window_size:] - cumsum[:-window_size]
+    return cumsum[window_size - 1:] / window_size
+
+
 if __name__ == '__main__':
-    lander = LunarLander(is_training=True, episodes=10)
+    lander = LunarLander(is_training=True, episodes=10, training_steps=300000)
 
