@@ -13,7 +13,7 @@ import numpy as np
 class TetrisEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 1}
 
-    def __init__(self, grid_cols=4, grid_rows=4, render_mode=None):
+    def __init__(self, grid_cols=5, grid_rows=5, render_mode=None):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
@@ -67,11 +67,11 @@ class TetrisEnv(gym.Env):
 if __name__ == "__main__":
     register(id="custom-tetris-v0", entry_point="CustomEnv:TetrisEnv")
 
-    is_training = False
+    is_training = True
     grid = 4
-    env = gym.make("custom-tetris-v0", render_mode="human")
+    env = gym.make("custom-tetris-v0", render_mode=None)
     if is_training:
-        q = np.zeros((4, 4, 4, 4, 4, 4, 3))
+        q = np.zeros((5, 5, 5, 5, 5, 5, 5, 3))
     else:
         f = open('q.pkl', 'rb')
         q = pickle.load(f)
@@ -80,12 +80,12 @@ if __name__ == "__main__":
     print("checking env...")
     check_env(env)
 
-    learning_rate_a = 0.5
-    discount_factor_g = 0.8
+    learning_rate_a = 0.4
+    discount_factor_g = 1
 
     epsilon = 1
     epsilon_decay_rate = 0.0001
-    episodes = 40000
+    episodes = 90000
     rng = np.random.default_rng()
 
     rewards_per_episode = np.zeros(episodes)

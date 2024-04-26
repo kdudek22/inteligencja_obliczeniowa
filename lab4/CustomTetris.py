@@ -10,12 +10,12 @@ class Action(Enum):
 
 
 class CustomTetris:
-    def __init__(self, grid_rows=4, grid_cols=4):
+    def __init__(self, grid_rows=5, grid_cols=5):
         self.board = np.zeros((grid_rows, grid_cols))
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.block_position = None
-        self.win_moves_count = 120
+        self.win_moves_count = 400
         self.move_count = 0
         self.is_over = False
         self.reset()
