@@ -10,12 +10,12 @@ class Action(Enum):
 
 
 class CustomTetris:
-    def __init__(self, grid_rows=3, grid_cols=3):
+    def __init__(self, grid_rows=4, grid_cols=4):
         self.board = np.zeros((grid_rows, grid_cols))
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.block_position = None
-        self.win_moves_count = 500
+        self.win_moves_count = 120
         self.move_count = 0
         self.is_over = False
         self.reset()
@@ -36,12 +36,13 @@ class CustomTetris:
         self.block_position = [0, random_col]
 
     def perform_action(self, action: Action):
-        if action == "1":
-            action = Action.LEFT
-        elif action == "2":
-            action = Action.NONE
-        else:
-            action = Action.RIGHT
+        # if action == "0":
+        #     action = Action.LEFT
+        # elif action == "1":
+        #     action = Action.NONE
+        # else:
+        #     action = Action.RIGHT
+        # print(type(action))
 
         if action == Action.LEFT:
             if self.block_position[1] > 0:
@@ -96,20 +97,11 @@ class CustomTetris:
 
 
 if __name__ == "__main__":
-    x = CustomTetris(5,5)
-#     # for i in range(100):
-#     #     x.get_amount_of_placed_elements()
-#     #     x.show_board()
-#     #     rand_action = random.choice(list(Action))
-#     #     print(rand_action)
-#     #     x.perform_action(rand_action)
-#
-#
+    x = CustomTetris(4,4)
     while not x.is_over:
         x.render()
         print(x.get_observations())
         move = input("move?")
         x.perform_action(move)
 
-    # x.show_board()
 

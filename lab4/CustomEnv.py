@@ -3,17 +3,17 @@ from gymnasium import spaces
 from gymnasium.envs.registration import register
 from gymnasium.utils.env_checker import check_env
 import matplotlib.pyplot as plt
-
+import pickle
 from CustomTetris import *
 import numpy as np
 
-register(id="custom-tetris-v0", entry_point="CustomEnv:TetrisEnv")
+
 
 
 class TetrisEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 1}
 
-    def __init__(self, grid_cols=5, grid_rows=5, render_mode=None):
+    def __init__(self, grid_cols=4, grid_rows=4, render_mode=None):
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.render_mode = render_mode
@@ -46,8 +46,8 @@ class TetrisEnv(gym.Env):
         reward = 0
         terminated = self.custom_tetris.is_over
 
-        if won:
-            reward = 1000
+        if won == True:
+            reward = 100
 
         elif not terminated:
             reward = 1
@@ -65,42 +65,57 @@ class TetrisEnv(gym.Env):
 
 
 if __name__ == "__main__":
-    grid = 5
-    env = gym.make("custom-tetris-v0", render_mode=None)
-    q = np.zeros((5, 5, 5, 5, 5, 5, 5, 3))
+    register(id="custom-tetris-v0", entry_point="CustomEnv:TetrisEnv")
+
+    is_training = False
+    grid = 4
+    env = gym.make("custom-tetris-v0", render_mode="human")
+    if is_training:
+        q = np.zeros((4, 4, 4, 4, 4, 4, 3))
+    else:
+        f = open('q.pkl', 'rb')
+        q = pickle.load(f)
+        f.close()
+
     print("checking env...")
     check_env(env)
 
-    learning_rate_a = 0.9
-    discount_factor_g = 0.9
+    learning_rate_a = 0.5
+    discount_factor_g = 0.8
 
     epsilon = 1
     epsilon_decay_rate = 0.0001
-    episodes = 5000
+    episodes = 40000
     rng = np.random.default_rng()
 
     rewards_per_episode = np.zeros(episodes)
 
     for i in range(episodes):
+        # print("====== NEW EPISODE ======")
         state, info = env.reset()
         terminated = False
         truncated = False
 
         while not terminated and not truncated:
+            # action = env.action_space.sample()
             if rng.random() < epsilon:
                 action = env.action_space.sample()
             else:
                 action = np.argmax(q[tuple(state)])
+            # print(action)
 
             new_state, reward, terminated, truncated, info = env.step(action)
+            state_index = tuple(state)
 
-            q[state, action] = q[state, action] + learning_rate_a * (
-                        reward + discount_factor_g * np.max(q[new_state, :]) - q[state, action])
+            q[state_index][action] = q[state_index][action] + learning_rate_a * (
+                    reward + discount_factor_g * np.max(q[tuple(new_state)]) - q[state_index][action])
 
             rewards_per_episode[i] += reward
 
             if terminated or truncated:
                 new_state, info = env.reset()
+
+            state = new_state
 
 
         epsilon = max(epsilon - epsilon_decay_rate, 0)
@@ -108,9 +123,12 @@ if __name__ == "__main__":
         if epsilon == 0:
             learning_rate_a = 0.0001
 
-
-
     env.close()
+
+    if is_training:
+        f = open('q.pkl', 'wb')
+        pickle.dump(q, f)
+        f.close()
 
     sum_rewards = np.zeros(episodes)
     for t in range(episodes):
